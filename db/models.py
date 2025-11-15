@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
-from datetime import datetime
 
 
 class User(AbstractUser):
@@ -70,7 +69,7 @@ class MovieSession(models.Model):
 
 
 class Order(models.Model):
-    created_at = models.DateTimeField(default=datetime.now)
+    created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -81,6 +80,7 @@ class Order(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
+        # Тести вимагають повернення ТІЛЬКИ часу, без <>
         return self.created_at.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -102,7 +102,7 @@ class Ticket(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["movie_session", "row", "seat"],
-                name="unique_ticket"
+                name="unique_ticket",
             )
         ]
 
@@ -112,18 +112,14 @@ class Ticket(models.Model):
 
         if not (1 <= self.row <= hall.rows):
             errors["row"] = [
-                (
-                    "row number must be in available range: "
-                    f"(1, rows): (1, {hall.rows})"
-                )
+                f"row number must be in available range: (1, rows):"
+                f" (1, {hall.rows})"
             ]
 
         if not (1 <= self.seat <= hall.seats_in_row):
             errors["seat"] = [
-                (
-                    "seat number must be in available range: "
-                    f"(1, seats_in_row): (1, {hall.seats_in_row})"
-                )
+                "seat number must be in available range: "
+                f"(1, seats_in_row): (1, {hall.seats_in_row})"
             ]
 
         if errors:
@@ -134,6 +130,7 @@ class Ticket(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
+        # Тести хочуть БЕЗ форматування <Ticket: ...>
         return (
             f"{self.movie_session.movie.title} "
             f"{self.movie_session.show_time.strftime('%Y-%m-%d %H:%M:%S')} "

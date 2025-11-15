@@ -23,31 +23,26 @@ def create_order(
     except ObjectDoesNotExist:
         raise ValueError(f"User with username '{username}' does not exist.")
 
+    order = Order.objects.create(user=user)
+
     if date:
         try:
-            created_at = datetime.strptime(date, "%Y-%m-%d %H:%M")
+            custom_date = datetime.strptime(date, "%Y-%m-%d %H:%M")
         except ValueError:
             raise ValueError("Date must be in format 'YYYY-MM-DD HH:MM'")
-    else:
-        created_at = datetime.now()
 
-    order = Order.objects.create(
-        user=user,
-        created_at=created_at
-    )
+        order.created_at = custom_date
+        order.save(update_fields=["created_at"])
 
-    created_tickets: List[Ticket] = []
+    created_tickets = []
 
     for data in tickets:
-        movie_session = MovieSession.objects.get(
-            id=data["movie_session"]
-        )
-
+        movie_session = MovieSession.objects.get(id=data["movie_session"])
         ticket = Ticket(
             movie_session=movie_session,
             order=order,
             row=data["row"],
-            seat=data["seat"],
+            seat=data["seat"]
         )
         ticket.full_clean()
         ticket.save()
