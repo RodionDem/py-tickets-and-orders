@@ -1,10 +1,10 @@
-from datetime import datetime
 from typing import Any
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
+from datetime import datetime
 
 
 class User(AbstractUser):
@@ -29,8 +29,8 @@ class Actor(models.Model):
 class Movie(models.Model):
     title = models.CharField(max_length=255, db_index=True)
     description = models.TextField()
-    actors = models.ManyToManyField(to=Actor, related_name="movies")
-    genres = models.ManyToManyField(to=Genre, related_name="movies")
+    actors = models.ManyToManyField("Actor", related_name="movies")
+    genres = models.ManyToManyField("Genre", related_name="movies")
 
     def __str__(self) -> str:
         return self.title
@@ -52,12 +52,12 @@ class CinemaHall(models.Model):
 class MovieSession(models.Model):
     show_time = models.DateTimeField()
     cinema_hall = models.ForeignKey(
-        to=CinemaHall,
+        "CinemaHall",
         on_delete=models.CASCADE,
         related_name="movie_sessions"
     )
     movie = models.ForeignKey(
-        to=Movie,
+        "Movie",
         on_delete=models.CASCADE,
         related_name="movie_sessions"
     )
@@ -72,7 +72,7 @@ class MovieSession(models.Model):
 class Order(models.Model):
     created_at = models.DateTimeField(default=datetime.now)
     user = models.ForeignKey(
-        to=settings.AUTH_USER_MODEL,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="orders"
     )
@@ -86,12 +86,12 @@ class Order(models.Model):
 
 class Ticket(models.Model):
     movie_session = models.ForeignKey(
-        to=MovieSession,
+        MovieSession,
         on_delete=models.CASCADE,
         related_name="tickets"
     )
     order = models.ForeignKey(
-        to=Order,
+        Order,
         on_delete=models.CASCADE,
         related_name="tickets"
     )
@@ -131,7 +131,7 @@ class Ticket(models.Model):
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.full_clean()
-        return super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return (

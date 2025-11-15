@@ -9,7 +9,7 @@ def get_movies(
     genres_ids: Optional[List[int]] = None,
     actors_ids: Optional[List[int]] = None,
     title: Optional[str] = None
-) -> QuerySet:
+) -> QuerySet[Movie]:
 
     queryset = Movie.objects.all()
 
@@ -27,16 +27,13 @@ def get_movies(
     movies_list = list(queryset)
 
     def sort_key(movie: Movie) -> tuple:
-        ticket = movie.title
-        if ticket.startswith("Harry Potter"):
-            last = ticket.split()[-1]
-            if last.isdigit():
-                return (0, int(last))
-            return (0, 0)
-        return (1, ticket.lower())
+        name = movie.title
+        if name.startswith("Harry Potter"):
+            last = name.split()[-1]
+            return (0, int(last)) if last.isdigit() else (0, 0)
+        return (1, name.lower())
 
     movies_list.sort(key=sort_key)
-
     sorted_ids = [m.id for m in movies_list]
 
     if not sorted_ids:
@@ -44,10 +41,9 @@ def get_movies(
 
     return Movie.objects.filter(id__in=sorted_ids).order_by(
         models.Case(
-            *[
-                models.When(id=pk, then=pos)
-                for pos, pk in enumerate(sorted_ids)
-            ]
+            *[models.When(id=pk, then=pos)
+              for pos, pk in enumerate(sorted_ids)
+              ]
         )
     )
 
@@ -56,6 +52,7 @@ def get_movie_by_id(movie_id: int) -> Movie:
     return Movie.objects.get(id=movie_id)
 
 
+@transaction.atomic
 def create_movie(
     movie_title: str,
     movie_description: str,
@@ -63,14 +60,14 @@ def create_movie(
     actors_ids: Optional[List[int]] = None
 ) -> Movie:
 
-    with transaction.atomic():
-        movie = Movie.objects.create(
-            title=movie_title,
-            description=movie_description
-        )
-        if genres_ids:
-            movie.genres.set(genres_ids)
-        if actors_ids:
-            movie.actors.set(actors_ids)
+    movie = Movie.objects.create(
+        title=movie_title,
+        description=movie_description
+    )
+
+    if genres_ids:
+        movie.genres.set(genres_ids)
+    if actors_ids:
+        movie.actors.set(actors_ids)
 
     return movie
